@@ -1,4 +1,9 @@
-const { ApolloServer, PubSub, gql } = require('apollo-server')
+const http = require('http')
+const { ApolloServer, PubSub, gql } = require('apollo-server-express')
+const express = require('express')
+
+const PORT = 4000
+const app = express()
 
 const pubsub = new PubSub()
 const COUNT_INCREMENTED = 'COUNT_INCREMENTED'
@@ -33,5 +38,14 @@ const resolvers = {
 }
 
 const server = new ApolloServer({ typeDefs, resolvers })
+server.applyMiddleware({ app })
 
-server.listen().then(({ url }) => console.log(`Server running at ${url}`))
+const httpServer = http.createServer(app)
+server.installSubscriptionHandlers(httpServer)
+
+httpServer.listen(PORT, () => {
+  console.log(`Server on http://localhost:${PORT}${server.graphqlPath}`)
+  console.log(
+    `Subscriptions on ws://localhost:${PORT}${server.subscriptionsPath}`
+  )
+})
